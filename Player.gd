@@ -7,6 +7,8 @@ var mouse_sensitivity := 0.001
 var twist_input := 0.0
 var pitch_input := 0.0
 
+var cam_mode := 0
+
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
@@ -20,7 +22,10 @@ func _process(delta):
 	input.x = Input.get_axis("left", "right") 
 	input.z = Input.get_axis("forward", "back")
 	
-	apply_central_force($TwistPivot.basis * input * speed * delta)
+	if cam_mode == 0:
+		apply_central_force($TwistPivot.basis * input * speed * delta)
+	else:
+		apply_central_force(input * speed * delta)
 	if Input.is_action_just_pressed("jump"):
 		if get_contact_count() > 0:
 			apply_central_force(Vector3.UP * jump_height * delta)
@@ -28,13 +33,21 @@ func _process(delta):
 	if Input.is_action_just_pressed("ui_cancel"):
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 		
+	if Input.is_action_just_pressed("shift"):
+		if cam_mode != 0:
+			cam_mode = 0
+			$TwistPivot.global_rotation = $Body.global_rotation
+		else:
+			cam_mode = 1
+		
 	$TwistPivot.rotate_y(twist_input)
-	$Body.rotate_y(twist_input)
 	$TwistPivot/PitchPivot.rotate_x(pitch_input)
 	$TwistPivot/PitchPivot.rotation.x = clamp($TwistPivot/PitchPivot.rotation.x, 
 		deg_to_rad(-50), 
 		deg_to_rad(50)
 	)
+	if cam_mode == 0:
+		$Body.rotate_y(twist_input)
 	
 	twist_input = 0.0
 	pitch_input = 0.0
